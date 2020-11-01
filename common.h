@@ -10,12 +10,14 @@
 #define EXIT_COPY_INPUT         7
 #define EXIT_WRITE_OUTPUT       8
 #define EXIT_SOLVE              9
+#define EXIT_WRITE_PROFILE      10
 
 extern int opt_max;
 extern int opt_solve;
 extern int opt_debug;
 extern const char *opt_input;
 extern const char *opt_output;
+extern const char *opt_profile;
 
 /*
  * top of a building

@@ -8,6 +8,7 @@ int opt_solve = 1;
 int opt_debug = 1;
 const char *opt_input = NULL;
 const char *opt_output = "output.svg";
+const char *opt_profile = NULL;
 
 int max_tops = 0;
 int cnt_tops = 0;
@@ -133,19 +134,28 @@ static int usage(int err, const char *msg)
            "\n"
            "city-profile [options...]\n"
            "\n"
-           "options:\n"
+           "options:\n");
+    printf("\n"
            "--help\n"
-           "-h          this help\n"
+           "-h                  this help\n");
+    printf("\n"
            "--solve=0/1\n"
-           "-s0/1       solve (default 1)\n"
+           "-s0/1               solve (default %d)\n", opt_solve);
+    printf("\n"
            "--debug=0/1\n"
-           "-d0/1       debug (default 1)\n"
+           "-d0/1               debug (default %d)\n", opt_debug);
+    printf("\n"
            "--max=int\n"
-           "-m int      max tops to alloc\n"
+           "-m int              max tops to alloc (default %d)\n", opt_max);
+    printf("\n"
            "--input=input\n"
-           "-i input    input tops (x y w)\n"
+           "-i input            input tops file (default %s)\n", opt_input ?: "<STDIN>");
+    printf("\n"
            "--output=output\n"
-           "-o output   output svg file\n");
+           "-o output           output svg file (defualt %s)\n", opt_output);
+    printf("\n"
+           "--profile=profile\n"
+           "-p profile          output profile file (default %s)\n", opt_profile ?: "<STDOUT>");
 
     if (err) exit(err);
     return err;
@@ -159,16 +169,17 @@ static int usage(int err, const char *msg)
  */
 static int parse_args(int argc, char * const argv[])
 {
-    static const char *shortopts = "hs:d:m:i:o:";
+    static const char *shortopts = "hs:d:m:i:o:p:";
     static struct option longopts[] =
     {
-        { "help",   no_argument,       0, 'h' },
-        { "solve",  required_argument, 0, 's' },
-        { "debug",  required_argument, 0, 'd' },
-        { "max",    required_argument, 0, 'm' },
-        { "input",  required_argument, 0, 'i' },
-        { "output", required_argument, 0, 'o' },
-        { NULL,     0,                 0,  0  },
+        { "help",    no_argument,       0, 'h' },
+        { "solve",   required_argument, 0, 's' },
+        { "debug",   required_argument, 0, 'd' },
+        { "max",     required_argument, 0, 'm' },
+        { "input",   required_argument, 0, 'i' },
+        { "output",  required_argument, 0, 'o' },
+        { "profile", required_argument, 0, 'p' },
+        { NULL,      0,                 0,  0  },
     };
     int c;
     int index;
@@ -196,8 +207,11 @@ static int parse_args(int argc, char * const argv[])
             case 'o':
                 opt_output = optarg;
                 break;
+            case 'p':
+                opt_profile = optarg;
+                break;
             case '?':
-                usage(1, NULL);
+                usage(EXIT_USAGE, NULL);
                 break;
         }
     }
@@ -263,10 +277,18 @@ int main(int argc, char * const argv[])
             return EXIT_SOLVE;
         }
         fprintf(stderr, "# %d tops solved\n", cnt);
+
+        FILE *fp = opt_profile ? fopen(opt_profile, "w") : stdout;
+        if (fp == NULL)
+        {
+            fprintf(stderr, "failed to write profile\n");
+            return EXIT_WRITE_PROFILE;
+        }
         for (top_t *p = prof; p != NULL; p = p->n)
         {
-            fprintf(stderr, "# %d %d %d\n", p->x, p->y, p->w);
+            fprintf(fp, "%d %d %d\n", p->x, p->y, p->w);
         }
+        if (opt_profile) fclose(fp);
     }
 
     if (make_svg(opt_output, tops, prof) < 0)
