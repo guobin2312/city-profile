@@ -65,7 +65,7 @@ static void insert_top(top_t **pnext, top_t *t)
     *pnext = t;
 }
 
-#define debug(format, ...) (opt_debug ? fprintf(stderr, "%s:%d\t"format, __FILE__, __LINE__, ## __VA_ARGS__) : 0)
+#define debug(format, ...) (opt_debug ? fprintf(stderr, "# %s:%d\t"format, __FILE__, __LINE__, ## __VA_ARGS__) : 0)
 
 /**
  * solve_profile - solve profile

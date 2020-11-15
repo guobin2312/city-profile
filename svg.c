@@ -52,10 +52,13 @@ int make_svg(const char *fname, const top_t *ptops, const top_t *pprof)
 
     if (pprof)
     {
-        int x = 0, y = 0;
+        int x = pprof->x, y = 0;
         fprintf(fp, "  <polyline\n     points=\"%d,%d", x, h - y);
         for (const top_t *p = pprof; p; p = p->n)
         {
+            if (x == p->x && y == p->y)
+                continue;
+
             /* dive */
             if (x != p->x)
             {

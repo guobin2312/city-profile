@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <ctype.h>
 #include "common.h"
 
 int opt_max = MAX_TOPS;
@@ -40,6 +41,28 @@ static int file_read_tops(const char *fname)
 
     while (top < end)
     {
+        int c = '\n';
+        while (c != EOF)
+        {
+            /* skip leading spaces */
+            for (c = getc(fp); c != EOF && isspace(c); c = getc(fp))
+                ;
+            if (c == EOF)
+                break;
+            if (c != '#')
+            {
+                ungetc(c, fp);
+                break;
+            }
+            /* skip from # to eol */
+            for (c = getc(fp); c != EOF && c != '\n'; c = getc(fp))
+                ;
+            if (c == EOF)
+                break;
+        }
+        if (c == EOF)
+            break;
+
         int cnt = fscanf(fp, "%d %d %d", &x, &y, &w);
         if (cnt == EOF)
             break;
@@ -48,7 +71,7 @@ static int file_read_tops(const char *fname)
             fprintf(stderr, "# failed to read %s\n", fname ?: "stdin");
             exit(EXIT_READ_INPUT);
         }
-        if (x <= 0 || y <= 0 || w <= 0)
+        if (x < 0 || y <= 0 || w <= 0)
         {
             if (fname) fclose(fp);
             return -1;
