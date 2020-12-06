@@ -3,10 +3,9 @@
 #include "common.h"
 
 /*
- * always assuming a <= b: * a->x <= b->x
+ * always assuming a <= b: a->x <= b->x
  */
-
-static inline int a_alignes_b(const top_t *a, const top_t *b)
+static inline int a_aligns_b(const top_t *a, const top_t *b)
 {
     return a->x == b->x;
 }
@@ -19,7 +18,7 @@ static inline int a_strictly_before_b(const top_t *a, const top_t *b)
     return a->x + a->w < b->x;
 }
 /*
- * !a_strictly_before_b => a_intersects_b
+ * !a_loosely_before_b => a_intersects_b && !a_touches_b
  */
 static inline int a_loosely_before_b(const top_t *a, const top_t *b)
 {
@@ -55,7 +54,7 @@ static top_t *pop_rest(top_t **prest)
 //    *prest = t;
 //}
 
-/* insert into list */
+/* insert t into list pnext ordered by x */
 static void insert_top(top_t **pnext, top_t *t)
 {
     assert(pnext && t);
@@ -82,21 +81,34 @@ int solve_profile(top_t **pprof, top_t **prest)
     while ((p = *pnext) != NULL)
     {
         debug("p: x=%d y=%d w=%d\n", p->x, p->y, p->w);
+        /* accept first top as prev */
         if (pprev == NULL)
         {
             pprev = pnext;
-            ++cnt;
             goto next;
         }
 
         q = *pprev;
         debug("q: x=%d y=%d w=%d\n", q->x, q->y, q->w);
 
+        /*
+         * prev merges with next
+         *
+         *  qqpp
+         *  qqpp
+         */
         if (a_touches_b(q, p) && q->y == p->y)
         {
             q->w += p->w;
             goto next;
         }
+        /*
+         * prev can separate from others
+         *
+         *     pp
+         *  qq pp
+         *  qq pp
+         */
         if (a_loosely_before_b(q, p))
         {
             q->n = p;
@@ -107,13 +119,20 @@ int solve_profile(top_t **pprof, top_t **prest)
 
         /*
          * w = width of intersection
-         * a_intersects_b(q, p) + w > 0
+         * a_intersects_b(q, p) && w > 0
          */
         int w = q->x + q->w - p->x; /* > 0 */
 
         /* extra before insection */
         if (q->x < p->x)
         {
+            /*
+             * prev lower than next
+             *
+             *    pp
+             *  qqrrr
+             *  qqrrr
+             */
             if (q->y < p->y)
             {
                 top_t *r = pop_rest(prest);
@@ -135,6 +154,12 @@ int solve_profile(top_t **pprof, top_t **prest)
                 ++cnt;
                 goto next;
             }
+            /*
+             * prev same as next
+             *
+             *  qqrrp
+             *  qqrrp
+             */
             else if (q->y == p->y)
             {
                 /* q absorbs p */
@@ -146,6 +171,13 @@ int solve_profile(top_t **pprof, top_t **prest)
                 pnext = &p->n;
                 goto next;
             }
+            /*
+             * prev higher than next
+             *
+             *  qq
+             *  qprr
+             *  qprr
+             */
             else  /* q->y > p->y */
             {
                 /* p included in q */
@@ -169,6 +201,13 @@ int solve_profile(top_t **pprof, top_t **prest)
         }
         else /* q->x == p->x */
         {
+            /*
+             * prev lower than next
+             *
+             *  pp
+             *  qqrrr
+             *  qqrrr
+             */
             if (q->y < p->y)
             {
                 /* q included in p */
@@ -194,6 +233,12 @@ int solve_profile(top_t **pprof, top_t **prest)
                 debug("q: x=%d y=%d w=%d\n", q->x, q->y, q->w);
                 goto next;
             }
+            /*
+             * prev same as next
+             *
+             *  qqp
+             *  qqp
+             */
             else if (q->y == p->y)
             {
                 /* q absorbs p */
@@ -205,6 +250,13 @@ int solve_profile(top_t **pprof, top_t **prest)
                 pnext = &p->n;
                 goto next;
             }
+            /*
+             * prev higher than next
+             *
+             *  qq
+             *  pprr
+             *  pprr
+             */
             else  /* q->y > p->y */
             {
                 /* p included in q */
@@ -233,6 +285,7 @@ next:
     {
         q = *pprev;
         q->n = NULL;
+        ++cnt;
     }
 
     return cnt;
