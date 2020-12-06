@@ -17,3 +17,7 @@ clean:
 	-rm -f *.o *.lst *~ $(NAME)
 
 .PHONEY: all clean
+
+.PHONY: check-syntax
+check-syntax:
+	$(CC) -o /dev/null -S ${CHK_SOURCES}
